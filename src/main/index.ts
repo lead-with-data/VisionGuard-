@@ -11,6 +11,7 @@ interface Settings {
   breakDuration: number // seconds
   isStrict: boolean
   enableStartupNotification: boolean
+  startupMode: 'auto' | 'prompt' | 'disabled'
 }
 
 interface DailyStats {
@@ -29,7 +30,8 @@ const store = new Store({
       workDuration: 20,
       breakDuration: 20,
       isStrict: false,
-      enableStartupNotification: true
+      enableStartupNotification: true,
+      startupMode: 'disabled'
     },
     stats: {}
   }
@@ -250,8 +252,17 @@ function broadcastStatus(): void {
   }
 }
 
+function updateStartupSettings(mode: string) {
+    const isEnabled = mode === 'auto' || mode === 'prompt'
+    app.setLoginItemSettings({
+        openAtLogin: isEnabled,
+        path: app.getPath('exe'),
+        args: ['--startup']
+    })
+}
+
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.visionguard')
+  electronApp.setAppUserModelId('com.visionguard.app')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
@@ -262,17 +273,11 @@ app.whenReady().then(() => {
   breakDurationSeconds = store.get('settings.breakDuration')
   timeLeft = workDurationSeconds
 
-  createDashboardWindow()
-  startTimer()
-  showWelcomeNotification()
-
-  // Track system resume
-  powerMonitor.on('resume', () => {
-    // When device opens / wakes up
-    showWelcomeNotification()
-  })
-
-  // Tray
+  // Check Startup Mode
+  const isStartup = process.argv.includes('--startup')
+  const startupMode = store.get('settings.startupMode')
+  
+  // Tray is always good to have
   tray = new Tray(icon)
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Open Dashboard', click: createDashboardWindow },
@@ -283,6 +288,47 @@ app.whenReady().then(() => {
   ])
   tray.setToolTip('VisionGuard')
   tray.setContextMenu(contextMenu)
+
+  // Logic for Startup
+  if (isStartup && startupMode === 'prompt') {
+      // User wants a notification confirmation
+      const notification = new Notification({
+          title: 'VisionGuard Ready',
+          body: 'Do you want to start your eye protection session?',
+          actions: [{ type: 'button', text: 'Start Session' }],
+          closeButtonText: 'Not Now',
+          icon
+      })
+
+      notification.on('action', (_, __) => {
+          createDashboardWindow()
+          startTimer()
+          showWelcomeNotification()
+      })
+
+      // If they click the body (not the button), also open? Usually yes.
+      notification.on('click', () => {
+          createDashboardWindow()
+          startTimer()
+      })
+
+      notification.show()
+  } else if (isStartup && startupMode === 'disabled') {
+      // Should shouldn't happen if registry is clean, but safe exit
+      app.quit()
+      return
+  } else {
+      // 'auto' or manual launch
+      createDashboardWindow()
+      startTimer()
+      if (isStartup) showWelcomeNotification()
+  }
+
+  // Track system resume
+  powerMonitor.on('resume', () => {
+    // When device opens / wakes up
+    showWelcomeNotification()
+  })
 
   // IPC Handlers
   ipcMain.handle('get-status', () => ({
@@ -298,25 +344,23 @@ app.whenReady().then(() => {
   // Settings & Stats Handlers
   ipcMain.handle('get-settings', () => store.get('settings'))
   ipcMain.handle('set-settings', (_, newSettings) => {
+    const oldSettings = store.get('settings')
     store.set('settings', newSettings)
+    
+    // Check if startup mode changed
+    if (newSettings.startupMode !== oldSettings.startupMode) {
+        updateStartupSettings(newSettings.startupMode)
+    }
+
     // Update local variables immediately
-    const oldWorkDuration = workDurationSeconds
     workDurationSeconds = newSettings.workDuration * 60
     breakDurationSeconds = newSettings.breakDuration
     
     // Immediate application logic:
     if (!isBreakActive) {
-        // If we reduced the work duration, we want to respect that.
-        // E.g. was 20m, now 1m.
-        // If timeLeft was 19m, it should probably drop to 1m or just be capped.
-        // But simply capping it at the NEW max (workDurationSeconds) ensures 
-        // that if we have "more time left than the new total duration", we clip it.
-        // Also, if the user wants to restart the timer effectively, they might just want the new duration.
-        // Let's cap timeLeft.
         if (timeLeft > workDurationSeconds) {
             timeLeft = workDurationSeconds
         }
-        // Broadcast immediately so UI updates
         broadcastStatus()
     }
     return true

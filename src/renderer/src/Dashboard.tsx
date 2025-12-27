@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useEffect, useState } from 'react'
-import { Settings, BarChart2, Home, SkipForward, Save } from 'lucide-react'
+import { Settings as SettingsIcon, BarChart2, Home, SkipForward, Save } from 'lucide-react'
 import { CircularProgress } from './components/CircularProgress'
 import { StatsChart } from './components/StatsChart'
 import { twMerge } from 'tailwind-merge'
@@ -11,7 +11,7 @@ export default function Dashboard(): React.JSX.Element {
     const [activeTab, setActiveTab] = useState<Tab>('home')
     const [status, setStatus] = useState({ timeLeft: 20 * 60, isBreakActive: false, totalDuration: 20 * 60 })
     const [stats, setStats] = useState<any>({})
-    const [settings, setSettings] = useState({ workDuration: 20, breakDuration: 20, isStrict: false, enableStartupNotification: true })
+    const [settings, setSettings] = useState({ workDuration: 20, breakDuration: 20, isStrict: false, enableStartupNotification: true, startupMode: 'disabled' })
 
     // Settings form state
     const [tempSettings, setTempSettings] = useState(settings)
@@ -24,8 +24,8 @@ export default function Dashboard(): React.JSX.Element {
         window.api.getStatus().then(setStatus)
         window.api.getStats().then(setStats)
         window.api.getSettings().then((s) => {
-            setSettings(s)
-            setTempSettings(s)
+            setSettings(s as any)
+            setTempSettings(s as any)
         })
     }, [])
 
@@ -36,7 +36,7 @@ export default function Dashboard(): React.JSX.Element {
     }
 
     const handleSaveSettings = async () => {
-        await window.api.setSettings(tempSettings)
+        await window.api.setSettings(tempSettings as any)
         setSettings(tempSettings)
         // maybe show toast
     }
@@ -58,7 +58,7 @@ export default function Dashboard(): React.JSX.Element {
                 <div className="flex flex-col gap-6 w-full px-4">
                     <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<Home />} label="Home" />
                     <NavButton active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart2 />} label="Stats" />
-                    <NavButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<Settings />} label="Settings" />
+                    <NavButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<SettingsIcon />} label="Settings" />
                 </div>
             </nav>
 
@@ -181,6 +181,46 @@ export default function Dashboard(): React.JSX.Element {
                                 </div>
                                 <div className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ${tempSettings.enableStartupNotification ? 'bg-green-500' : 'bg-slate-700'}`}>
                                     <div className={`w-6 h-6 bg-white rounded-full transition-transform duration-300 ${tempSettings.enableStartupNotification ? 'translate-x-6' : 'translate-x-0'}`} />
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-white/5" />
+
+                            <div className="space-y-4">
+                                <label className="text-lg font-medium">Startup Behavior</label>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <button
+                                        onClick={() => setTempSettings({ ...tempSettings, startupMode: 'disabled' })}
+                                        className={`p-4 rounded-xl border transition-all text-left group ${tempSettings.startupMode === 'disabled'
+                                            ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                                            : 'bg-white/5 border-white/5 text-white/40 hover:bg-white/10'
+                                            }`}
+                                    >
+                                        <div className="font-medium mb-1 group-hover:text-white transition-colors">Disabled</div>
+                                        <div className="text-xs opacity-70">Don't start automatically</div>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setTempSettings({ ...tempSettings, startupMode: 'auto' })}
+                                        className={`p-4 rounded-xl border transition-all text-left group ${tempSettings.startupMode === 'auto'
+                                            ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                                            : 'bg-white/5 border-white/5 text-white/40 hover:bg-white/10'
+                                            }`}
+                                    >
+                                        <div className="font-medium mb-1 group-hover:text-white transition-colors">Always Run</div>
+                                        <div className="text-xs opacity-70">Start silently in background</div>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setTempSettings({ ...tempSettings, startupMode: 'prompt' })}
+                                        className={`p-4 rounded-xl border transition-all text-left group ${tempSettings.startupMode === 'prompt'
+                                            ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                                            : 'bg-white/5 border-white/5 text-white/40 hover:bg-white/10'
+                                            }`}
+                                    >
+                                        <div className="font-medium mb-1 group-hover:text-white transition-colors">Notify Me</div>
+                                        <div className="text-xs opacity-70">Ask me before starting</div>
+                                    </button>
                                 </div>
                             </div>
 

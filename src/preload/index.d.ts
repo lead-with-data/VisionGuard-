@@ -11,6 +11,7 @@ interface Settings {
   breakDuration: number
   isStrict: boolean
   enableStartupNotification: boolean
+  startupMode: 'auto' | 'prompt' | 'disabled'
 }
 
 interface DailyStats {

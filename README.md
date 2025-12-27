@@ -25,14 +25,16 @@
 *   **Customization**:
     *   **Strict Mode**: (Coming Soon) Force breaks for maximum health enforcement.
     *   **Configurable Timers**: Adjust Work Duration and Break Duration instantly.
+    *   **Startup Behavior**: Choose how the app starts—run silently in the background, ask for permission via notification, or disable auto-start entirely.
     *   **Instant Updates**: Settings apply immediately without restarting the app.
 
 ## 🚀 Installation & Usage
 
-### Windows (Pre-packaged)
-1.  Navigate to the `dist/win-unpacked` directory.
-2.  Launch **`VisionGuard.exe`**.
-3.   The app will minimize to the **System Tray**. Right-click the tray icon to open the Dashboard or Quit.
+### Windows (Installer)
+1.  Run the installer (e.g., `VisionGuard Setup 1.0.0.exe`) found in the `dist` folder.
+2.  The app will install and open automatically.
+3.  **Startup Configuration**: Go to **Settings** -> **Startup Behavior** to configure the app to run automatically on login (Silent or Notification mode).
+4.  The app lives in your **System Tray**. Right-click the tray icon to access the Dashboard or Quit.
 
 ### Development Setup
 
