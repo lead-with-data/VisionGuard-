@@ -51,11 +51,11 @@ export default function Overlay(): React.JSX.Element {
                     </h1>
                     <motion.div
                         className="text-white/80 font-mono"
-                        style={{ fontSize: '4rem', marginTop: '-1rem', transform: 'rotate(-2deg)' }}
+                        style={{ fontSize: '2.5rem', marginTop: '1rem', transform: 'rotate(-2deg)' }}
                         animate={{ opacity: [0.5, 1, 0.5] }}
                         transition={{ duration: 2, repeat: Infinity }}
                     >
-                        — {timeLeft}s
+                        Save your eyes for {timeLeft} seconds
                     </motion.div>
                 </motion.div>
 
